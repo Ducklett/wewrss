@@ -1,0 +1,19 @@
+{
+  "name": "wewrss",
+  "version": "1.0.0",
+  "description": "yet another rss reader",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "start": "snowpack dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "..\\\\..\\\\Sync\\\\projects\\\\wewrss\\\\"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

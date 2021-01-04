@@ -1,12 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
-    <h1>Hello?</h1>
+    <div id="layout">
+        <div id="sidebar"></div>
+        <main>
+            <pre></pre>
+            <button id="save-channels">Save</button>
+            <button id="load-channels">Load</button>
+        </main>
+    </div>
     <script src="index.js" type="module"></script>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #layout {
+            display: grid;
+            grid-template-columns: 300px auto;
+        }
+
+        #sidebar {
+            background-color: lightgray;
+        }
+
+        #sidebar,
+        main {
+            height: 100vh;
+        }
+
+        .channel-button {
+            border: none;
+            margin: none;
+            padding: 16px;
+            font-size: 14pt;
+            background-color: unset;
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+
+        .channel-button:hover,
+        .channel-button:focus,
+        .channel-button-selected {
+            outline: none;
+            background-color: rgba(0, 0, 0, .2);
+        }
+
+    </style>
 </body>
+
 </html>

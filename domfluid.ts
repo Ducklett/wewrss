@@ -2,8 +2,10 @@ export interface DomFluidNodeOptions {
     id?: string,
     class?: string,
     text?: string,
+    innerHTML?:string,
     src?: string,
     href?: string,
+    target?: '_blank' | '_parent' | '_self' | '_top',
     onClick?: () => any,
 }
 

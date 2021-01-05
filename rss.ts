@@ -1,4 +1,4 @@
-export enum AggregateFeedType {
+export enum FeedType {
     Article,
     MicroBlog,
     Video,
@@ -7,13 +7,14 @@ export enum AggregateFeedType {
 export type Feed = {
     kind: 'single',
     name: string,
+    type: FeedType | null,
     source: string,
 }
 
 export type AggregateFeed = {
     kind: 'aggregate',
     name: string,
-    type: AggregateFeedType,
+    type: FeedType,
     feeds: Feed[],
 }
 
@@ -32,10 +33,10 @@ export type RssArticle = {
     thumbnail: string | null,
 }
 
-export const MakeFeed = (name: string, source: string): Feed =>
-    ({ kind: 'single', name, source })
+export const MakeFeed = (name: string, source: string, type: FeedType = null): Feed =>
+    ({ kind: 'single', name, source, type })
 
-export const MakeAggregateFeed = (name: string, type: AggregateFeedType, feeds: Feed[] = []): AggregateFeed =>
+export const MakeAggregateFeed = (name: string, type: FeedType, feeds: Feed[] = []): AggregateFeed =>
     ({ kind: 'aggregate', name, type, feeds })
 
 export const saveChannels = (channels: Channel[]) =>
@@ -77,7 +78,7 @@ export const parseRss = (feed: string): RssArticle[] => {
                 link: it.querySelector('link')?.textContent,
                 date: new Date(it.querySelector('pubDate')?.textContent),
                 description: it.querySelector('description')?.textContent,
-                thumbnail: it.querySelector('enclosure')?.getAttribute('url'),
+                thumbnail: (it.getElementsByTagName('media:thumbnail')[0] || it.querySelector('enclosure'))?.getAttribute('url'),
             })
         }
     }
@@ -85,6 +86,56 @@ export const parseRss = (feed: string): RssArticle[] => {
     console.log(dom)
 
     return items
+}
+
+/**
+ * loads feeds from localstorage
+ * 
+ * they are stored as a flat map, use `shapeFeeds()` to make aggregate feeds
+ */
+export const loadFeeds = async () => {
+    const str = localStorage.getItem('feedInfo')
+
+    const data = new Map<string, RssArticle[]>()
+
+    if (!str) return data
+
+    const obj = JSON.parse(str)
+
+    console.log(obj)
+
+    for (let k of Object.keys(obj)) {
+        console.log('ok....')
+        console.log(k)
+        for (let ar of obj[k]) {
+            ar.date = new Date(ar.date)
+        }
+        data.set(k, obj[k])
+    }
+
+    return data
+}
+
+export const shapeFeeds = (data: Map<string, RssArticle[]>, channels: Channel[]) => {
+    const shaped = new Map<string, RssArticle[]>()
+
+    for (let ch of channels) {
+        switch (ch.kind) {
+            case 'aggregate':
+                const aggragatedArticles = ch.feeds.reduce((arr, feed) => {
+                    console.log('adding ' + feed.name)
+                    return arr.concat(data.get(feed.name))
+                }, [] as RssArticle[])
+                    .sort((a, b) => b.date.getTime() - a.date.getTime())
+                shaped.set(ch.name, aggragatedArticles)
+                break
+            case 'single':
+                shaped.set(ch.name, data.get(ch.name))
+                break
+        }
+    }
+
+    return shaped
 }
 
 export const updateFeed = async (feed: Feed) => {
@@ -98,36 +149,38 @@ export const updateFeed = async (feed: Feed) => {
 
     return articles
 }
+
 export const updateFeeds = async (channels: Channel[]) => {
-    const newFeedInfo = new Map<string, RssArticle[]>()
+    const feedInfo = new Map() //await loadFeeds()
 
     for (let ch of channels) {
         let articles: RssArticle[] = []
 
         switch (ch.kind) {
             case 'aggregate': {
-
                 for (let fd of ch.feeds) {
+                    const old = feedInfo.get(fd.name) || []
                     const feedArticles = await updateFeed(fd)
-                    articles = articles.concat(feedArticles)
+                    feedInfo.set(fd.name, old.concat(feedArticles))
                 }
 
-                articles.sort((a, b) => b.date.getTime() - a.date.getTime())
                 break
             }
             case 'single': {
+                const old = feedInfo.get(ch.name) || []
                 articles = await updateFeed(ch)
-                newFeedInfo.set(ch.name, articles)
+                feedInfo.set(ch.name, old.concat(articles))
                 break
             }
         }
 
-        newFeedInfo.set(ch.name, articles)
+        feedInfo.set(ch.name, articles)
     }
 
-    localStorage.setItem('feedInfo', JSON.stringify(newFeedInfo))
+    localStorage.setItem('feedInfo', JSON.stringify(Object.fromEntries(feedInfo)))
 
     console.log('done!')
-    console.log(newFeedInfo)
-    return newFeedInfo
+    console.log(feedInfo)
+
+    return shapeFeeds(feedInfo, channels)
 }

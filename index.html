@@ -14,12 +14,11 @@
         </div>
         <main>
             <pre></pre>
-            <button id="update-channels">Update</button>
+            <button id="update-channels" class="btn">Update</button>
 
             <div id="articles"> </div>
-            <button id="btn-next">Previous</button>
-            <button id="btn-previous">Next</button>
-
+            <button id="btn-previous" class="btn">Previous</button>
+            <button id="btn-next" class="btn">Next</button>
         </main>
     </div>
     <script src="index.js" type="module"></script>
@@ -30,6 +29,9 @@
             --bg-3: gray;
             --fg: rgba(0, 0, 0, .9);
             --fg-light: rgba(0, 0, 0, .6);
+            --primary: rgb(35, 35, 179);
+            --primary-dark: #17177d;
+            --primary-fg: rgba(255, 255, 255, 0.719);
         }
 
         @media (prefers-color-scheme: dark) {
@@ -47,6 +49,18 @@
             box-sizing: border-box;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             color: var(--fg);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .btn {
+            border-radius: 4px;
+            padding: 10px;
+            color: var(--primary-fg);
+            background: linear-gradient(94deg, var(--primary), var(--primary-dark));
+            border: none;
         }
 
         body {
@@ -110,6 +124,7 @@
             height: unset;
             margin: 20px 0px 4px 0px;
         }
+
         #articles p {
             max-width: 80ch;
             line-height: 1.4;
@@ -149,8 +164,9 @@
             justify-content: center;
             gap: 10px;
         }
-        
-        #microblog p, #microblog small {
+
+        #microblog p,
+        #microblog small {
             display: inline-block;
             margin: 10px;
         }

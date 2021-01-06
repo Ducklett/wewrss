@@ -141,7 +141,7 @@ export const shapeFeeds = (data: RssData, channels: Channel[]) => {
 }
 
 export const updateFeed = async (feed: Feed) => {
-    const proxy = 'https://cors-anywhere.herokuapp.com/'
+    const proxy = 'https://cors.vec-t.com/'
     const url = `${proxy}${feed.source}`
     console.log('updating ' + url)
     const res = await fetch(url)

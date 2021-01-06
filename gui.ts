@@ -1,14 +1,6 @@
 import { A, Article, Button, Details, H2, Img, Main, Small, Summary } from "./domfluid"
 import { Channel, FeedType, loadFeeds, RssArticle, RssData, shapeFeeds, updateFeeds } from "./rss"
 
-interface GuiDependencies {
-    channels: Channel[]
-    sidebar: HTMLElement,
-    articleContainer: HTMLElement,
-    nextBtn: HTMLButtonElement,
-    prevBtn: HTMLButtonElement
-}
-
 const setChildren = (parent: HTMLElement, children: HTMLElement[]) => {
     parent.innerHTML = null
     for (let ch of children) parent.appendChild(ch)
@@ -34,6 +26,8 @@ const linkifyMedia = (root: HTMLElement) => {
     return root
 }
 
+const DateTime = (d:Date) => Small({ text: d.toDateString() })
+
 type FeedTypeGui = { id: string, render: (a: RssArticle) => HTMLElement }
 
 type FeedTypeGuis = {
@@ -46,7 +40,7 @@ const feedGuis: FeedTypeGuis = {
     [FeedType.MicroBlog]: {
         id: 'microblog',
         render: (a: RssArticle) => Article({},
-            Small({ text: a.date.toDateString() }),
+            DateTime(a.date),
             linkifyMedia(Main({ innerHTML: a.description })))
     },
     [FeedType.Video]: {
@@ -56,7 +50,7 @@ const feedGuis: FeedTypeGuis = {
             A({ href: a.link, target: '_blank' },
                 Img({ src: a.thumbnail }),
                 H2({ text: a.title })),
-            Small({ text: a.date.toDateString() }),
+            DateTime(a.date),
             Details({},
                 Summary({ text: 'Description' }),
                 Main({ text: a.description })))
@@ -66,9 +60,18 @@ const feedGuis: FeedTypeGuis = {
         render: (a: RssArticle) => Article({},
             A({ href: a.link, target: '_blank' },
                 H2({ text: a.title })),
-            Small({ text: a.date.toDateString() }),
+            DateTime(a.date),
             Main({ innerHTML: a.description }))
     },
+}
+
+interface GuiDependencies {
+    channels: Channel[]
+    sidebar: HTMLElement,
+    articleContainer: HTMLElement,
+    nextBtn: HTMLButtonElement,
+    prevBtn: HTMLButtonElement
+    updateBtn: HTMLButtonElement
 }
 
 export default async ({
@@ -77,21 +80,33 @@ export default async ({
     articleContainer,
     nextBtn,
     prevBtn,
+    updateBtn,
 }: GuiDependencies) => {
 
     let data: RssData | null
     let lastChannel: Channel | null
+    let currentPage = 0
 
 
-    const showFeed = (articles: RssArticle[], displayType: FeedType, page = 0) => {
+    const showFeed = (channel: Channel, page = 0) => {
+        lastChannel = channel
+        let articles = data.get(channel.name)
+        const displayType = channel.type || FeedType.Article
+
+        currentPage = page
         const itemsPerPage = 30
-        articles = articles.slice(itemsPerPage * page, itemsPerPage * (page + 1))
+        const displayFrom = itemsPerPage * page
+        const displayTo = itemsPerPage * (page + 1)
+        const len = articles.length
+        articles = articles.slice(displayFrom, displayTo)
 
-        console.log('fuck', articles)
-        console.log('disp', displayType)
+        console.log('page', page)
+        console.log('len', len)
+        console.log('to', displayTo)
+        setVisibility(prevBtn, page > 0)
+        setVisibility(nextBtn, len > displayTo)
 
         const gui = feedGuis[displayType]
-        console.log(displayType, gui)
         articleContainer.id = gui.id
         const articleNodes = articles.map(gui.render)
 
@@ -104,10 +119,10 @@ export default async ({
                 text: c.name,
                 class: 'channel-button',
                 // TODO: get the data again
-                onClick: () => showFeed(data.get(c.name), c.type || FeedType.Article),
+                onClick: () => showFeed(c),
             })))
 
-    const showData = async (forceUpdate = false) => {
+    const showData = async (forceUpdate = false, page = 0) => {
         const flatData = await loadFeeds()
         data = (flatData.size > 0 && !forceUpdate)
             ? shapeFeeds(flatData, channels)
@@ -116,9 +131,12 @@ export default async ({
 
             ; (window as any).data = data
 
-        const ch = (lastChannel || channels[0])
-        showFeed(data.get(ch.name), ch.type || FeedType.Article)
+        showFeed((lastChannel || channels[0]), page)
     }
+
+    prevBtn.addEventListener('click', () => showFeed(lastChannel, currentPage-1))
+    nextBtn.addEventListener('click', () => showFeed(lastChannel, currentPage + 1))
+    updateBtn.addEventListener('click', () => showData(true, currentPage))
 
     showData()
     populateChannelList(channels)

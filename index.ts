@@ -2,6 +2,7 @@ import { Channel, FeedType, MakeAggregateFeed, MakeFeed } from "./rss"
 import makeGui from './gui'
 
 const CORSproxies = [
+    'http://149.28.237.160:8080/',
     'https://cors-anywhere.herokuapp.com/',
     'http://www.whateverorigin.org/get?url=',
     'http://dry-sierra-94326.herokuapp.com/',
@@ -61,7 +62,6 @@ let channels: Channel[] = [
 ]
 
 // const s = document.querySelector('#sidebar')
-// document.querySelector('#update-channels').addEventListener('click', updateData)
 
 makeGui({
     channels,
@@ -69,5 +69,6 @@ makeGui({
     articleContainer: document.getElementById('articles'),
     nextBtn: document.getElementById('btn-next') as HTMLButtonElement,
     prevBtn: document.getElementById('btn-previous') as HTMLButtonElement,
+    updateBtn: document.querySelector('#update-channels')
 })
 

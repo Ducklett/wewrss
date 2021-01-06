@@ -1,7 +1,7 @@
 export enum FeedType {
-    Article,
-    MicroBlog,
-    Video,
+    Article = 1,
+    MicroBlog = 2,
+    Video = 3,
 }
 
 export type Feed = {
@@ -32,6 +32,8 @@ export type RssArticle = {
     description: string,
     thumbnail: string | null,
 }
+
+export type RssData = Map<string, RssArticle[]>
 
 export const MakeFeed = (name: string, source: string, type: FeedType = null): Feed =>
     ({ kind: 'single', name, source, type })
@@ -116,7 +118,7 @@ export const loadFeeds = async () => {
     return data
 }
 
-export const shapeFeeds = (data: Map<string, RssArticle[]>, channels: Channel[]) => {
+export const shapeFeeds = (data: RssData, channels: Channel[]) => {
     const shaped = new Map<string, RssArticle[]>()
 
     for (let ch of channels) {
@@ -150,7 +152,7 @@ export const updateFeed = async (feed: Feed) => {
     return articles
 }
 
-export const updateFeeds = async (channels: Channel[]) => {
+export const updateFeeds = async (channels: Channel[]):Promise<RssData> => {
     const feedInfo = new Map() //await loadFeeds()
 
     for (let ch of channels) {

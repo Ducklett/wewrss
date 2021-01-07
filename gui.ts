@@ -72,6 +72,7 @@ interface GuiDependencies {
     nextBtn: HTMLButtonElement,
     prevBtn: HTMLButtonElement
     updateBtn: HTMLButtonElement
+    updateProgress: HTMLElement,
 }
 
 export default async ({
@@ -81,6 +82,7 @@ export default async ({
     nextBtn,
     prevBtn,
     updateBtn,
+    updateProgress,
 }: GuiDependencies) => {
 
     let data: RssData | null
@@ -123,10 +125,15 @@ export default async ({
             })))
 
     const showData = async (forceUpdate = false, page = 0) => {
+        const countUpdated = (x,y) => {
+            if (x==0) setVisibility(updateProgress, true)
+            if (x==y) setVisibility(updateProgress, false)
+            updateProgress.querySelector('span').textContent=`${x}/${y}`
+        }
         const flatData = await loadFeeds()
         data = (flatData.size > 0 && !forceUpdate)
             ? shapeFeeds(flatData, channels)
-            : await updateFeeds(channels)
+            : await updateFeeds(channels, countUpdated)
         console.log(data)
 
             ; (window as any).data = data

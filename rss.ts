@@ -152,9 +152,14 @@ export const updateFeed = async (feed: Feed) => {
     return articles
 }
 
-export const updateFeeds = async (channels: Channel[]):Promise<RssData> => {
+export const updateFeeds = async (channels: Channel[], progressCallback: (completed: number, total: number) => any): Promise<RssData> => {
     const feedInfo = new Map() //await loadFeeds()
 
+    let completed = 0
+    const channelCount = channels.reduce((acc, c) => c.kind == 'single' ? acc + 1 : acc + c.feeds.length, 0)
+
+    progressCallback(0,channelCount)
+    const incrementCompletion = () => progressCallback(++completed, channelCount)
     for (let ch of channels) {
         let articles: RssArticle[] = []
 
@@ -163,6 +168,7 @@ export const updateFeeds = async (channels: Channel[]):Promise<RssData> => {
                 for (let fd of ch.feeds) {
                     const old = feedInfo.get(fd.name) || []
                     const feedArticles = await updateFeed(fd)
+                    incrementCompletion()
                     feedInfo.set(fd.name, old.concat(feedArticles))
                 }
 
@@ -171,6 +177,7 @@ export const updateFeeds = async (channels: Channel[]):Promise<RssData> => {
             case 'single': {
                 const old = feedInfo.get(ch.name) || []
                 articles = await updateFeed(ch)
+                incrementCompletion()
                 feedInfo.set(ch.name, old.concat(articles))
                 break
             }
@@ -178,6 +185,13 @@ export const updateFeeds = async (channels: Channel[]):Promise<RssData> => {
 
         feedInfo.set(ch.name, articles)
     }
+
+    // fake completion for now
+    if (completed!=channelCount) {
+        console.log('fake completion')
+        progressCallback(channelCount,channelCount)
+    }
+
 
     localStorage.setItem('feedInfo', JSON.stringify(Object.fromEntries(feedInfo)))
 

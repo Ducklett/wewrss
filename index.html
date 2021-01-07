@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Wewrss</title>
+    <link rel="icon" href="icon.png">
 </head>
 
 <body>
@@ -13,12 +14,17 @@
             <div id="channel-list"></div>
         </div>
         <main>
-            <pre></pre>
-            <button id="update-channels" class="btn">Update</button>
+            <div id="update-area">
+                <div class="progress hidden">
+                    <img src="loading.gif" alt="loading...">
+                    <span>10/100</span>
+                </div>
+                <button id="update-channels" class="btn">Update</button>
+            </div>
 
             <div id="articles"> </div>
-            <button id="btn-previous" class="btn">Previous</button>
-            <button id="btn-next" class="btn">Next</button>
+            <button id="btn-previous" class="btn hidden">Previous</button>
+            <button id="btn-next" class="btn hidden">Next</button>
         </main>
     </div>
     <script src="index.js" type="module"></script>
@@ -52,7 +58,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none!important;
         }
 
         .btn {
@@ -71,6 +77,31 @@
 
         small {
             color: var(--fg-light);
+        }
+
+        div#update-area {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            justify-content: flex-end;
+        }
+
+        #update-area>.progress {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #update-area>.progress>span {
+            opacity: .6;
+        }
+
+        #update-area>.progress>img {
+            opacity: .9;
+            height: 18px;
         }
 
         #layout {

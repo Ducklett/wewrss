@@ -21,4 +21,5 @@ makeGui({
     importBtn: document.querySelector('#btn-import'),
     exportBtn: document.querySelector('#btn-export'),
     updateProgress: document.querySelector('.progress'),
+    lastUpdated: document.querySelector('.last-updated'),
 })

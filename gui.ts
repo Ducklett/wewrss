@@ -78,6 +78,7 @@ interface GuiDependencies {
     importBtn: HTMLButtonElement
     exportBtn: HTMLButtonElement
     updateProgress: HTMLElement,
+    lastUpdated: HTMLElement,
 }
 
 export default async ({
@@ -91,6 +92,7 @@ export default async ({
     importBtn,
     exportBtn,
     updateProgress,
+    lastUpdated,
 }: GuiDependencies) => {
 
     const desktopWidth = 1200
@@ -147,10 +149,23 @@ export default async ({
                 onClick: () => showFeed(c),
             })))
 
+    const renderLastUpdated = () => {
+        lastUpdated.textContent = `Last updated: ${localStorage.getItem('lastUpdated')||''}`
+    }
+
     const showData = async (forceUpdate = false, page = 0) => {
         const countUpdated = (x, y) => {
-            if (x == 0) setVisibility(updateProgress, true)
-            if (x == y) setVisibility(updateProgress, false)
+            if (x == 0) {
+                setVisibility(updateProgress, true)
+                setVisibility(lastUpdated, false)
+            } else if (x == y) {
+                setVisibility(updateProgress, false)
+                setVisibility(lastUpdated, true)
+                const dateText = new Date().toLocaleDateString()
+                localStorage.setItem('lastUpdated', dateText)
+                renderLastUpdated()
+            }
+
             updateProgress.querySelector('span').textContent = `${x}/${y}`
         }
         const flatData = await loadFeeds()
@@ -175,6 +190,7 @@ export default async ({
 
 
     if (window.innerWidth < desktopWidth) toggleMenu()
+    renderLastUpdated()
 
     menuBtn.addEventListener('click', toggleMenu)
 

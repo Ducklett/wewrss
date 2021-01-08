@@ -1,7 +1,7 @@
 export enum FeedType {
-    Article = 1,
-    MicroBlog = 2,
-    Video = 3,
+    Article = 'article',
+    MicroBlog = 'microblog',
+    Video = 'video',
 }
 
 export type Feed = {
@@ -41,11 +41,13 @@ export const MakeFeed = (name: string, source: string, type: FeedType = null): F
 export const MakeAggregateFeed = (name: string, type: FeedType, feeds: Feed[] = []): AggregateFeed =>
     ({ kind: 'aggregate', name, type, feeds })
 
-export const saveChannels = (channels: Channel[]) =>
+export const saveChannels = (channels: Channel[]) => {
     localStorage.setItem('rssChannels', JSON.stringify(channels))
+    return channels
+}
 
 export const loadChannels = (): Channel[] =>
-    JSON.parse(localStorage.getItem('rssChannels')) || []
+    JSON.parse(localStorage.getItem('rssChannels'))
 
 export const parseRss = (feed: string): RssArticle[] => {
     const dom: Document = new window.DOMParser().parseFromString(feed, "text/xml")
@@ -89,6 +91,8 @@ export const parseRss = (feed: string): RssArticle[] => {
 
     return items
 }
+
+export const clearData = () => localStorage.removeItem('feedInfo')
 
 /**
  * loads feeds from localstorage
@@ -140,9 +144,8 @@ export const shapeFeeds = (data: RssData, channels: Channel[]) => {
     return shaped
 }
 
-export const updateFeed = async (feed: Feed) => {
-    const proxy = 'https://cors.vec-t.com/'
-    const url = `${proxy}${feed.source}`
+export const updateFeed = async (feed: Feed, corsProxy: string) => {
+    const url = `${corsProxy}${feed.source}`
     console.log('updating ' + url)
     const res = await fetch(url)
     const text = await res.text()
@@ -152,13 +155,13 @@ export const updateFeed = async (feed: Feed) => {
     return articles
 }
 
-export const updateFeeds = async (channels: Channel[], progressCallback: (completed: number, total: number) => any): Promise<RssData> => {
+export const updateFeeds = async (channels: Channel[], corsProxy: string, progressCallback: (completed: number, total: number) => any): Promise<RssData> => {
     const feedInfo = new Map() //await loadFeeds()
 
     let completed = 0
     const channelCount = channels.reduce((acc, c) => c.kind == 'single' ? acc + 1 : acc + c.feeds.length, 0)
 
-    progressCallback(0,channelCount)
+    progressCallback(0, channelCount)
     const incrementCompletion = () => progressCallback(++completed, channelCount)
     for (let ch of channels) {
         let articles: RssArticle[] = []
@@ -167,7 +170,7 @@ export const updateFeeds = async (channels: Channel[], progressCallback: (comple
             case 'aggregate': {
                 for (let fd of ch.feeds) {
                     const old = feedInfo.get(fd.name) || []
-                    const feedArticles = await updateFeed(fd)
+                    const feedArticles = await updateFeed(fd, corsProxy)
                     incrementCompletion()
                     feedInfo.set(fd.name, old.concat(feedArticles))
                 }
@@ -176,7 +179,7 @@ export const updateFeeds = async (channels: Channel[], progressCallback: (comple
             }
             case 'single': {
                 const old = feedInfo.get(ch.name) || []
-                articles = await updateFeed(ch)
+                articles = await updateFeed(ch, corsProxy)
                 incrementCompletion()
                 feedInfo.set(ch.name, old.concat(articles))
                 break
@@ -187,9 +190,9 @@ export const updateFeeds = async (channels: Channel[], progressCallback: (comple
     }
 
     // fake completion for now
-    if (completed!=channelCount) {
+    if (completed != channelCount) {
         console.log('fake completion')
-        progressCallback(channelCount,channelCount)
+        progressCallback(channelCount, channelCount)
     }
 
 

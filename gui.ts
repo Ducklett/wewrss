@@ -1,5 +1,5 @@
 import { A, Article, Button, Details, H2, Img, Main, Small, Summary } from "./domfluid"
-import { Channel, FeedType, loadFeeds, RssArticle, RssData, shapeFeeds, updateFeeds } from "./rss"
+import { Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, saveChannels, shapeFeeds, updateFeeds } from "./rss"
 
 const setChildren = (parent: HTMLElement, children: HTMLElement[]) => {
     parent.innerHTML = null
@@ -65,8 +65,9 @@ const feedGuis: FeedTypeGuis = {
     },
 }
 
+const makeConfig = (corsProxy: string, channels: Channel[]) => ({ corsProxy, channels })
+
 interface GuiDependencies {
-    channels: Channel[]
     layout: HTMLElement,
     sidebar: HTMLElement,
     articleContainer: HTMLElement,
@@ -74,11 +75,12 @@ interface GuiDependencies {
     nextBtn: HTMLButtonElement,
     prevBtn: HTMLButtonElement
     updateBtn: HTMLButtonElement
+    importBtn: HTMLButtonElement
+    exportBtn: HTMLButtonElement
     updateProgress: HTMLElement,
 }
 
 export default async ({
-    channels,
     layout,
     sidebar,
     articleContainer,
@@ -86,10 +88,25 @@ export default async ({
     nextBtn,
     prevBtn,
     updateBtn,
+    importBtn,
+    exportBtn,
     updateProgress,
 }: GuiDependencies) => {
 
     const desktopWidth = 1200
+
+    const defaultConfig = makeConfig('https://cors.vec-t.com/', [
+        MakeAggregateFeed('twitter', FeedType.MicroBlog, [
+            MakeFeed('POTUS', 'https://nitter.net/potus/rss'),
+            MakeFeed('Obama', 'https://nitter.net/barackobama/rss'),
+        ])
+    ])
+
+    const channels = loadChannels() || saveChannels(defaultConfig.channels)
+    const corsProxy = localStorage.getItem('corsProxy') || (() => {
+        localStorage.setItem('corsProxy', defaultConfig.corsProxy)
+        return defaultConfig.corsProxy
+    })()
 
     let data: RssData | null
     let lastChannel: Channel | null
@@ -140,7 +157,7 @@ export default async ({
         const flatData = await loadFeeds()
         data = (flatData.size > 0 && !forceUpdate)
             ? shapeFeeds(flatData, channels)
-            : await updateFeeds(channels, countUpdated)
+            : await updateFeeds(channels, corsProxy, countUpdated)
         console.log(data)
 
             ; (window as any).data = data
@@ -165,6 +182,51 @@ export default async ({
     prevBtn.addEventListener('click', () => showFeed(lastChannel, currentPage - 1))
     nextBtn.addEventListener('click', () => showFeed(lastChannel, currentPage + 1))
     updateBtn.addEventListener('click', () => showData(true, currentPage))
+
+    const download = (text: string, filename: string) => {
+        var pom = document.createElement('a');
+        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        pom.setAttribute('download', filename);
+
+        if (document.createEvent) {
+            var event = document.createEvent('MouseEvents');
+            event.initEvent('click', true, true);
+            pom.dispatchEvent(event);
+        }
+        else {
+            pom.click();
+        }
+    }
+    exportBtn.addEventListener('click', () => {
+        const data = JSON.stringify({ corsProxy, channels }, null, 2)
+        console.log(data)
+        download(data, 'rssConfig.json')
+    })
+
+    importBtn.addEventListener('click', () => {
+        const fileInput = document.createElement('input')
+        fileInput.type = 'file'
+        fileInput.accept = 'application/json'
+        fileInput.click()
+        fileInput.addEventListener('change', async () => {
+            const t = await fileInput.files[0]?.text()
+            if (!t) return;
+
+            const config = JSON.parse(t)
+            if (config.corsProxy && config.channels) {
+                // assume it has the correct shape
+                console.log(config)
+
+                localStorage.setItem('corsProxy', config.corsProxy)
+                saveChannels(config.channels)
+                clearData()
+                window.location.reload()
+            } else {
+                alert('incorrect json object shape')
+            }
+
+        })
+    })
 
     showData()
     populateChannelList(channels)

@@ -14,6 +14,7 @@
             <div id="channel-list"></div>
         </div>
         <main>
+            <Button class="menu-btn"></Button>
             <div id="update-area">
                 <div class="progress hidden">
                     <img src="loading.gif" alt="loading...">
@@ -49,6 +50,10 @@
                 --fg: rgba(255, 255, 255, 0.8);
                 --fg-light: rgba(255, 255, 255, 0.5);
             }
+
+            .menu-btn {
+                filter: invert(100);
+            }
         }
 
         * {
@@ -58,7 +63,7 @@
         }
 
         .hidden {
-            display: none!important;
+            display: none !important;
         }
 
         .btn {
@@ -67,6 +72,12 @@
             color: var(--primary-fg);
             background: linear-gradient(94deg, var(--primary), var(--primary-dark));
             border: none;
+            transition: 1.3s all ease;
+        }
+
+        .btn:focus {
+            outline: none;
+            background: linear-gradient(40deg, var(--primary), var(--primary-dark));
         }
 
         body {
@@ -104,22 +115,72 @@
             height: 18px;
         }
 
-        #layout {
-            width: 100vw;
-            height: 100vh;
-            display: grid;
-            grid-template-columns: 300px 1fr;
+        .menu-btn:focus {
+            outline: none;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            opacity: .4;
+            width: 40px;
+            height: 40px;
+            background-image: url('/hamburger.png');
+            background-size: contain;
+        }
+
+        @media only screen and (min-width: 1200px) {
+
+            .menu-hidden#layout {
+                grid-template-columns: 0px 1fr;
+            }
+
+            #layout {
+                width: 100vw;
+                height: 100vh;
+                display: grid;
+                grid-template-columns: 300px 1fr;
+            }
+
+            #layout>#sidebar,
+            #layout>main {
+                height: 100vh;
+                overflow: auto;
+            }
+
+            .menu-btn {
+                margin: 10px;
+                position: fixed;
+            }
+        }
+
+        @media only screen and (max-width: 1199px) {
+            #sidebar {
+                transition: .3s ease all;
+                padding-top: 48px;
+                position: fixed;
+                width: 100%;
+                overflow: hidden;
+            }
+
+            .menu-hidden>#sidebar {
+                opacity: 0;
+                height: 0px;
+                margin-top: -100px;
+            }
+
+            .menu-btn {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+            }
+
         }
 
         #sidebar {
             background-color: var(--bg-2);
         }
 
-        #layout>#sidebar,
-        #layout>main {
-            height: 100vh;
-            overflow: auto;
-        }
 
         #layout>main {
             width: 100%;
@@ -147,7 +208,7 @@
             width: 100%;
             display: grid;
             justify-content: center;
-            grid-template-columns: 800px;
+            grid-template-columns: minmax(1fr, 800px);
         }
 
         #articles h2 {
@@ -189,9 +250,10 @@
         }
 
         #microblog {
+            padding: 24px;
             width: 100%;
             display: grid;
-            grid-template-columns: 600px;
+            grid-template-columns: fit-content(600px);
             justify-content: center;
             gap: 10px;
         }

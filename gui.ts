@@ -26,7 +26,7 @@ const linkifyMedia = (root: HTMLElement) => {
     return root
 }
 
-const DateTime = (d:Date) => Small({ text: d.toDateString() })
+const DateTime = (d: Date) => Small({ text: d.toDateString() })
 
 type FeedTypeGui = { id: string, render: (a: RssArticle) => HTMLElement }
 
@@ -67,8 +67,10 @@ const feedGuis: FeedTypeGuis = {
 
 interface GuiDependencies {
     channels: Channel[]
+    layout: HTMLElement,
     sidebar: HTMLElement,
     articleContainer: HTMLElement,
+    menuBtn: HTMLButtonElement,
     nextBtn: HTMLButtonElement,
     prevBtn: HTMLButtonElement
     updateBtn: HTMLButtonElement
@@ -77,20 +79,25 @@ interface GuiDependencies {
 
 export default async ({
     channels,
+    layout,
     sidebar,
     articleContainer,
+    menuBtn,
     nextBtn,
     prevBtn,
     updateBtn,
     updateProgress,
 }: GuiDependencies) => {
 
+    const desktopWidth = 1200
+
     let data: RssData | null
     let lastChannel: Channel | null
     let currentPage = 0
 
-
     const showFeed = (channel: Channel, page = 0) => {
+        if (window.innerWidth < desktopWidth) layout.classList.add('menu-hidden')
+
         lastChannel = channel
         let articles = data.get(channel.name)
         const displayType = channel.type || FeedType.Article
@@ -125,10 +132,10 @@ export default async ({
             })))
 
     const showData = async (forceUpdate = false, page = 0) => {
-        const countUpdated = (x,y) => {
-            if (x==0) setVisibility(updateProgress, true)
-            if (x==y) setVisibility(updateProgress, false)
-            updateProgress.querySelector('span').textContent=`${x}/${y}`
+        const countUpdated = (x, y) => {
+            if (x == 0) setVisibility(updateProgress, true)
+            if (x == y) setVisibility(updateProgress, false)
+            updateProgress.querySelector('span').textContent = `${x}/${y}`
         }
         const flatData = await loadFeeds()
         data = (flatData.size > 0 && !forceUpdate)
@@ -141,7 +148,21 @@ export default async ({
         showFeed((lastChannel || channels[0]), page)
     }
 
-    prevBtn.addEventListener('click', () => showFeed(lastChannel, currentPage-1))
+    const toggleMenu = () => {
+        const hidden = layout.classList.contains('menu-hidden')
+        if (hidden) {
+            layout.classList.remove('menu-hidden')
+        } else {
+            layout.classList.add('menu-hidden')
+        }
+    }
+
+
+    if (window.innerWidth < desktopWidth) toggleMenu()
+
+    menuBtn.addEventListener('click', toggleMenu)
+
+    prevBtn.addEventListener('click', () => showFeed(lastChannel, currentPage - 1))
     nextBtn.addEventListener('click', () => showFeed(lastChannel, currentPage + 1))
     updateBtn.addEventListener('click', () => showData(true, currentPage))
 

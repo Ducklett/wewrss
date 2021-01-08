@@ -14,6 +14,7 @@ const CORSproxies = [
 let channels: Channel[] = [
     MakeFeed('lukesmith.xyz', 'https://lukesmith.xyz/rss.xml'),
     MakeAggregateFeed('Videos', FeedType.Video, [
+        MakeFeed('gamefromscratch', 'https://www.youtube.com/feeds/videos.xml?channel_id=UCr-5TdGkKszdbboXXsFZJTQ'),
         MakeFeed('the art of code', 'https://www.youtube.com/feeds/videos.xml?channel_id=UCcAlTqd9zID6aNX3TzwxJXg'),
         MakeFeed('meth squad', 'https://www.youtube.com/feeds/videos.xml?channel_id=UC8PqFD4Nqk4PbqvCwudmQww'),
         MakeFeed('jreg', 'https://www.youtube.com/feeds/videos.xml?channel_id=UCGSGPehp0RWfca-kENgBJ9Q'),
@@ -67,10 +68,13 @@ let channels: Channel[] = [
 
 // const s = document.querySelector('#sidebar')
 
+
 makeGui({
     channels,
+    layout: document.querySelector('#layout'),
     sidebar: document.getElementById('channel-list'),
     articleContainer: document.getElementById('articles'),
+    menuBtn: document.querySelector('.menu-btn'),
     nextBtn: document.getElementById('btn-next') as HTMLButtonElement,
     prevBtn: document.getElementById('btn-previous') as HTMLButtonElement,
     updateBtn: document.querySelector('#update-channels'),

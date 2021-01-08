@@ -1,6 +1,6 @@
 {
   "name": "wewrss",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "yet another rss reader",
   "main": "index.js",
   "dependencies": {},
@@ -12,9 +12,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "..\\\\..\\\\Sync\\\\projects\\\\wewrss\\\\"
+    "url": "https://github.com/ducklett/wewrss"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": ["rss", "pwa","minimal", "selfhosted"],
+  "author": "Shale Weltner",
+  "license": "AGPLv3"
 }

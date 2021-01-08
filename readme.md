@@ -7,7 +7,7 @@ wewrss is an rss PWA with no backend. Feeds are configured and manually imported
 
 ## Config object shape
 
-Channels can have either a `single` or `aggregate` kind, and are shaped a shown below.
+Channels can have either a `single` or `aggregate` kind, and are shaped as shown below.
 
 If set, the `type` determines which renderer is used to present the channel. Supported renderers are `microblog`, `article` and `video`.
 

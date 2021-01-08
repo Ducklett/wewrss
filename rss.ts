@@ -189,13 +189,6 @@ export const updateFeeds = async (channels: Channel[], corsProxy: string, progre
         feedInfo.set(ch.name, articles)
     }
 
-    // fake completion for now
-    if (completed != channelCount) {
-        console.log('fake completion')
-        progressCallback(channelCount, channelCount)
-    }
-
-
     localStorage.setItem('feedInfo', JSON.stringify(Object.fromEntries(feedInfo)))
 
     console.log('done!')

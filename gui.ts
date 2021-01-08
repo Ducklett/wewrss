@@ -144,7 +144,6 @@ export default async ({
             Button({
                 text: c.name,
                 class: 'channel-button',
-                // TODO: get the data again
                 onClick: () => showFeed(c),
             })))
 

@@ -95,6 +95,7 @@ export default async ({
     lastUpdated,
 }: GuiDependencies) => {
 
+    const main = layout.querySelector('main')
     const desktopWidth = 1200
 
     const defaultConfig = makeConfig('https://cors.vec-t.com/', [
@@ -135,10 +136,12 @@ export default async ({
         setVisibility(nextBtn, len > displayTo)
 
         const gui = feedGuis[displayType]
+
         articleContainer.id = gui.id
         const articleNodes = articles.map(gui.render)
 
         setChildren(articleContainer, articleNodes)
+        main.scrollTop=0
     }
 
     const populateChannelList = (channels: Channel[]) =>

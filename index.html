@@ -12,12 +12,16 @@
     <div id="layout">
         <div id="sidebar">
             <div id="channel-list"></div>
-            <button id="btn-import" class="btn btn-muted">Import config</button>
-            <button id="btn-export" class="btn btn-muted">Export config</button>
+            <hr>
+            <div class="btn-area">
+                <button id="btn-import" class="btn btn-muted">Import config</button>
+                <button id="btn-export" class="btn btn-muted">Export config</button>
+            </div>
         </div>
         <main>
             <Button class="semi-btn menu-btn"></Button>
-            <a href="https://github.com/ducklett/wewrss" target="_blank" alt="source code" title="source code" class="semi-btn source-btn"></a>
+            <a href="https://github.com/ducklett/wewrss" target="_blank" alt="source code" title="source code"
+                class="semi-btn source-btn"></a>
             <div id="update-area">
                 <small class="last-updated"></small>
                 <div class="progress hidden">
@@ -28,8 +32,10 @@
             </div>
 
             <div id="articles"> </div>
-            <button id="btn-previous" class="btn hidden">Previous</button>
-            <button id="btn-next" class="btn hidden">Next</button>
+            <div class="btn-area">
+                <button id="btn-previous" class="btn hidden">Newer</button>
+                <button id="btn-next" class="btn hidden">Older</button>
+            </div>
         </main>
     </div>
     <script src="index.js" type="module"></script>
@@ -71,6 +77,22 @@
 
         .hidden {
             display: none !important;
+        }
+
+        hr {
+            height: 0px;
+            border: none;
+            margin: 0px 12px;
+            opacity: .5;
+            border-top: 2px solid var(--bg);
+        }
+
+        .btn-area {
+            padding: 12px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn {
@@ -152,7 +174,7 @@
         .source-btn {
             background-image: url('/sourcecode.png');
             /* shitty hack but whatever */
-            margin-left: 56px!important;
+            margin-left: 56px !important;
         }
 
         @media only screen and (min-width: 1200px) {
@@ -195,9 +217,12 @@
                 margin-top: -100px;
             }
 
-            .menu-btn {
+            .semi-btn {
                 position: fixed;
                 top: 10px;
+            }
+
+            .menu-btn {
                 left: 10px;
             }
 

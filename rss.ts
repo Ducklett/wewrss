@@ -105,8 +105,15 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
         case 'atomv2': {
         const channel = dom.querySelector('channel')
         if (channel) {
+
+            let linkElem:HTMLElement = channel.querySelector('link')
+            // why does this match...
+            if (linkElem.tagName == "atom:link") {
+                linkElem = channel.querySelectorAll('link')[1]
+            }
+
             header.title = channel.querySelector('title')?.textContent
-            header.url = channel.querySelector('link')?.textContent
+            header.url = linkElem?.textContent
             header.description = channel.querySelector('description')?.textContent
             header.image = channel.querySelector('image>url')?.textContent
 

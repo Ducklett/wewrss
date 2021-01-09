@@ -1,9 +1,9 @@
-import { A, Article, Button, Details, Div, H2, Img, Main, Small, Summary } from "./domfluid"
+import { A, Article, Button, Details, Div, H2, Img, Main, P, Small, Summary } from "./domfluid"
 import { Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, RssHeader, saveChannels, shapeFeeds, updateFeeds } from "./rss"
 
 const setChildren = (parent: HTMLElement, children: HTMLElement[]) => {
     parent.innerHTML = null
-    for (let ch of children) parent.appendChild(ch)
+    for (let ch of children) ch && parent.appendChild(ch)
 }
 
 const setVisibility = (el: HTMLElement, visible: boolean) => {
@@ -95,6 +95,7 @@ const makeConfig = (corsProxy: string, channels: Channel[]) => ({ corsProxy, cha
 interface GuiDependencies {
     layout: HTMLElement,
     sidebar: HTMLElement,
+    channelInfoContainer: HTMLElement,
     articleContainer: HTMLElement,
     menuBtn: HTMLButtonElement,
     nextBtn: HTMLButtonElement,
@@ -109,6 +110,7 @@ interface GuiDependencies {
 export default async ({
     layout,
     sidebar,
+    channelInfoContainer,
     articleContainer,
     menuBtn,
     nextBtn,
@@ -162,6 +164,22 @@ export default async ({
         console.log('to', displayTo)
         setVisibility(prevBtn, page > 0)
         setVisibility(nextBtn, len > displayTo)
+
+        const header = data.headerMap.get(channel.name)
+        setVisibility(channelInfoContainer, channel.kind == 'single' && !!header)
+
+        if (header) {
+            setChildren(channelInfoContainer, [
+                header.image && Img({ src: header.image }),
+                Div({},
+                    header.title && (header.url
+                        ? A({ href: header.url }, H2({ text: header.title }))
+                        : H2({ text: header.title })),
+                    header.description && P({ text: header.description }),
+                )
+
+            ])
+        }
 
         const gui = feedGuis[displayType]
 

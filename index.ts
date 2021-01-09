@@ -13,6 +13,7 @@ import makeGui from './gui'
 makeGui({
     layout: document.querySelector('#layout'),
     sidebar: document.getElementById('channel-list'),
+    channelInfoContainer: document.getElementById('channel-info'),
     articleContainer: document.getElementById('articles'),
     menuBtn: document.querySelector('.menu-btn'),
     nextBtn: document.getElementById('btn-next') as HTMLButtonElement,

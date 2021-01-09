@@ -24,7 +24,7 @@ export const $ = <T extends keyof HTMLElementTagNameMap>(name: T, options: DomFl
         }
     }
 
-    children.forEach(child => el.appendChild(child));
+    children.forEach(child => child && el.appendChild(child));
 
     return el
 }

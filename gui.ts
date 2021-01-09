@@ -1,5 +1,5 @@
-import { A, Article, Button, Details, H2, Img, Main, Small, Summary } from "./domfluid"
-import { Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, saveChannels, shapeFeeds, updateFeeds } from "./rss"
+import { A, Article, Button, Details, Div, H2, Img, Main, Small, Summary } from "./domfluid"
+import { Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, RssHeader, saveChannels, shapeFeeds, updateFeeds } from "./rss"
 
 const setChildren = (parent: HTMLElement, children: HTMLElement[]) => {
     parent.innerHTML = null
@@ -28,7 +28,20 @@ const linkifyMedia = (root: HTMLElement) => {
 
 const DateTime = (d: Date) => Small({ text: d.toDateString() })
 
-type FeedTypeGui = { id: string, render: (a: RssArticle) => HTMLElement }
+type ArticleGuiData = {
+    guid: string,
+    title: string,
+    link: string,
+    date: Date,
+    description: string,
+    thumbnail?: string,
+    // used to do a channel header lookup
+    // when the article is presented in an aggregate feed
+    channelHeader?: RssHeader,
+}
+
+
+type FeedTypeGui = { id: string, render: (a: ArticleGuiData) => HTMLElement }
 
 type FeedTypeGuis = {
     [FeedType.MicroBlog]: FeedTypeGui,
@@ -36,31 +49,43 @@ type FeedTypeGuis = {
     [FeedType.Article]: FeedTypeGui,
 }
 
+const inlineChannelRenderer = (head: RssHeader, ...children: HTMLElement[]) => Div({ class: 'channel-info-inline' },
+    head.image && Img({ src: head.image }),
+    head.url ?
+        A({ href: head.url }, Small({ text: head.title }))
+        : Small({ text: head.title }),
+    ...children)
+
+const dateAndChannelInfo = (head: RssHeader, date: Date) =>
+    head ?
+        inlineChannelRenderer(head, DateTime(date))
+        : DateTime(date)
+
 const feedGuis: FeedTypeGuis = {
     [FeedType.MicroBlog]: {
         id: 'microblog',
-        render: (a: RssArticle) => Article({},
-            DateTime(a.date),
+        render: (a: ArticleGuiData) => Article({},
+            dateAndChannelInfo(a.channelHeader, a.date),
             linkifyMedia(Main({ innerHTML: a.description })))
     },
     [FeedType.Video]: {
         id: 'videos',
-        render: (a: RssArticle) => Article({},
+        render: (a: ArticleGuiData) => Article({},
             // /* shitty mpv forwarding */ Div({ onClick: () => fetch(`http://localhost:6969/${a.link}`) },
             A({ href: a.link, target: '_blank' },
                 Img({ src: a.thumbnail }),
                 H2({ text: a.title })),
-            DateTime(a.date),
+            dateAndChannelInfo(a.channelHeader, a.date),
             Details({},
                 Summary({ text: 'Description' }),
                 Main({ text: a.description })))
     },
     [FeedType.Article]: {
         id: 'articles',
-        render: (a: RssArticle) => Article({},
+        render: (a: ArticleGuiData) => Article({},
             A({ href: a.link, target: '_blank' },
                 H2({ text: a.title })),
-            DateTime(a.date),
+            dateAndChannelInfo(a.channelHeader, a.date),
             Main({ innerHTML: a.description }))
     },
 }
@@ -119,7 +144,10 @@ export default async ({
         if (window.innerWidth < desktopWidth) layout.classList.add('menu-hidden')
 
         lastChannel = channel
-        let articles = data.get(channel.name)
+        let articles: ArticleGuiData[] = data.articleMap.get(channel.name).map(({ guid, title, link, date, description, thumbnail, channelName }) =>
+            ({ guid, title, link, date, description, thumbnail, channelHeader: channel.kind == 'aggregate' && data.headerMap.get(channelName) }))
+
+
         const displayType = channel.type || FeedType.Article
 
         currentPage = page
@@ -141,7 +169,7 @@ export default async ({
         const articleNodes = articles.map(gui.render)
 
         setChildren(articleContainer, articleNodes)
-        main.scrollTop=0
+        main.scrollTop = 0
     }
 
     const populateChannelList = (channels: Channel[]) =>
@@ -153,7 +181,7 @@ export default async ({
             })))
 
     const renderLastUpdated = () => {
-        lastUpdated.textContent = `Last updated: ${localStorage.getItem('lastUpdated')||''}`
+        lastUpdated.textContent = `Last updated: ${localStorage.getItem('lastUpdated') || ''}`
     }
 
     const showData = async (forceUpdate = false, page = 0) => {
@@ -171,10 +199,13 @@ export default async ({
 
             updateProgress.querySelector('span').textContent = `${x}/${y}`
         }
-        const flatData = await loadFeeds()
-        data = (flatData.size > 0 && !forceUpdate)
-            ? shapeFeeds(flatData, channels)
-            : await updateFeeds(channels, corsProxy, countUpdated)
+        const oldData = await loadFeeds()
+        if (oldData.articleMap.size > 0 && !forceUpdate) {
+            oldData.articleMap = shapeFeeds(oldData.articleMap, channels)
+            data = oldData
+        } else {
+            data = await updateFeeds(channels, corsProxy, countUpdated)
+        }
         console.log(data)
 
             ; (window as any).data = data

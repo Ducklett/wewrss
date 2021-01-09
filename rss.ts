@@ -30,10 +30,23 @@ export type RssArticle = {
     link: string,
     date: Date,
     description: string,
-    thumbnail: string | null,
+    thumbnail?: string,
+    // used to do a channel header lookup
+    // when the article is presented in an aggregate feed
+    channelName?: string,
 }
 
-export type RssData = Map<string, RssArticle[]>
+export type RssHeader = {
+    title: string,
+    description: string,
+    url: string,
+    image: string,
+}
+
+export type RssData = {
+    headerMap: Map<string, RssHeader>,
+    articleMap: Map<string, RssArticle[]>
+}
 
 export const MakeFeed = (name: string, source: string, type: FeedType = null): Feed =>
     ({ kind: 'single', name, source, type })
@@ -49,14 +62,27 @@ export const saveChannels = (channels: Channel[]) => {
 export const loadChannels = (): Channel[] =>
     JSON.parse(localStorage.getItem('rssChannels'))
 
-export const parseRss = (feed: string): RssArticle[] => {
+export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
     const dom: Document = new window.DOMParser().parseFromString(feed, "text/xml")
 
     const isYoutube = dom.querySelector('feed')?.getAttribute('xmlns:yt')
 
+    let header: RssHeader = {
+        title: '',
+        description: '',
+        url: '',
+        image: '',
+    }
+
     const items: RssArticle[] = []
 
     if (isYoutube) {
+
+        const author = dom.querySelector('author')
+        if (author) {
+            header.title = author.querySelector('name')?.textContent
+            header.url = author.querySelector('uri')?.textContent
+        }
 
         const domItems = dom.querySelectorAll('entry')
 
@@ -73,6 +99,15 @@ export const parseRss = (feed: string): RssArticle[] => {
             })
         }
     } else {
+        const channel = dom.querySelector('channel')
+        if (channel) {
+            header.title = channel.querySelector('title')?.textContent
+            header.url = channel.querySelector('link')?.textContent
+            header.description = channel.querySelector('description')?.textContent
+            header.image = channel.querySelector('image>url')?.textContent
+
+        }
+
         const domItems = dom.querySelectorAll('channel item')
 
         for (let it of domItems) {
@@ -89,7 +124,7 @@ export const parseRss = (feed: string): RssArticle[] => {
 
     console.log(dom)
 
-    return items
+    return [header, items]
 }
 
 export const clearData = () => localStorage.removeItem('feedInfo')
@@ -99,10 +134,13 @@ export const clearData = () => localStorage.removeItem('feedInfo')
  * 
  * they are stored as a flat map, use `shapeFeeds()` to make aggregate feeds
  */
-export const loadFeeds = async () => {
+export const loadFeeds = async (): Promise<RssData> => {
     const str = localStorage.getItem('feedInfo')
 
-    const data = new Map<string, RssArticle[]>()
+    const data: RssData = {
+        headerMap: new Map<string, RssHeader>(),
+        articleMap: new Map<string, RssArticle[]>()
+    }
 
     if (!str) return data
 
@@ -110,19 +148,20 @@ export const loadFeeds = async () => {
 
     console.log(obj)
 
-    for (let k of Object.keys(obj)) {
-        console.log('ok....')
-        console.log(k)
-        for (let ar of obj[k]) {
+    for (let k of Object.keys(obj.articleMap)) {
+        for (let ar of obj.articleMap[k]) {
             ar.date = new Date(ar.date)
         }
-        data.set(k, obj[k])
+        data.articleMap.set(k, obj.articleMap[k])
+    }
+    for (let k of Object.keys(obj.headerMap)) {
+        data.headerMap.set(k, obj.headerMap[k])
     }
 
     return data
 }
 
-export const shapeFeeds = (data: RssData, channels: Channel[]) => {
+export const shapeFeeds = (data: Map<string, RssArticle[]>, channels: Channel[]) => {
     const shaped = new Map<string, RssArticle[]>()
 
     for (let ch of channels) {
@@ -150,13 +189,19 @@ export const updateFeed = async (feed: Feed, corsProxy: string) => {
     const res = await fetch(url)
     const text = await res.text()
 
-    const articles = parseRss(text)
+    const data = parseRss(text)
+    data[1].forEach(ar => {
+        ar.channelName = feed.name
+    })
 
-    return articles
+    return data
 }
 
 export const updateFeeds = async (channels: Channel[], corsProxy: string, progressCallback: (completed: number, total: number) => any): Promise<RssData> => {
-    const feedInfo = new Map() //await loadFeeds()
+    const data: RssData = {
+        headerMap: new Map<string, RssHeader>(),
+        articleMap: new Map<string, RssArticle[]>(),
+    }
 
     let completed = 0
     const channelCount = channels.reduce((acc, c) => c.kind == 'single' ? acc + 1 : acc + c.feeds.length, 0)
@@ -164,35 +209,37 @@ export const updateFeeds = async (channels: Channel[], corsProxy: string, progre
     progressCallback(0, channelCount)
     const incrementCompletion = () => progressCallback(++completed, channelCount)
     for (let ch of channels) {
-        let articles: RssArticle[] = []
 
         switch (ch.kind) {
             case 'aggregate': {
                 for (let fd of ch.feeds) {
-                    const old = feedInfo.get(fd.name) || []
-                    const feedArticles = await updateFeed(fd, corsProxy)
+                    const [header, feedArticles] = await updateFeed(fd, corsProxy)
                     incrementCompletion()
-                    feedInfo.set(fd.name, old.concat(feedArticles))
+                    data.headerMap.set(fd.name, header)
+                    data.articleMap.set(fd.name, feedArticles)
                 }
 
                 break
             }
             case 'single': {
-                const old = feedInfo.get(ch.name) || []
-                articles = await updateFeed(ch, corsProxy)
+                const [header, articles] = await updateFeed(ch, corsProxy)
                 incrementCompletion()
-                feedInfo.set(ch.name, old.concat(articles))
+                data.articleMap.set(ch.name, articles)
+                data.headerMap.set(ch.name, header)
                 break
             }
         }
-
-        feedInfo.set(ch.name, articles)
     }
 
-    localStorage.setItem('feedInfo', JSON.stringify(Object.fromEntries(feedInfo)))
+    localStorage.setItem('feedInfo', JSON.stringify({
+        headerMap: Object.fromEntries(data.headerMap),
+        articleMap: Object.fromEntries(data.articleMap),
+    }))
 
     console.log('done!')
-    console.log(feedInfo)
+    console.log(data)
 
-    return shapeFeeds(feedInfo, channels)
+    data.articleMap = shapeFeeds(data.articleMap, channels)
+
+    return data
 }

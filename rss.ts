@@ -65,7 +65,10 @@ export const loadChannels = (): Channel[] =>
 export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
     const dom: Document = new window.DOMParser().parseFromString(feed, "text/xml")
 
-    const isYoutube = dom.querySelector('feed')?.getAttribute('xmlns:yt')
+    const feedType = dom.querySelector('feed')?.getAttribute('xmlns:yt') ? 'youtube' :
+        dom.querySelector('rss')?.getAttribute('version') === '2.0' ? 'atomv2' :
+            dom.querySelector('feed')?.getAttribute('xmlns') === 'http://www.w3.org/2005/Atom' ? 'atomv1' :
+                'unknown'
 
     let header: RssHeader = {
         title: '',
@@ -76,29 +79,30 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
 
     const items: RssArticle[] = []
 
-    if (isYoutube) {
+    switch (feedType) {
+        case 'youtube': {
+            const author = dom.querySelector('author')
+            if (author) {
+                header.title = author.querySelector('name')?.textContent
+                header.url = author.querySelector('uri')?.textContent
+            }
 
-        const author = dom.querySelector('author')
-        if (author) {
-            header.title = author.querySelector('name')?.textContent
-            header.url = author.querySelector('uri')?.textContent
-        }
+            const domItems = dom.querySelectorAll('entry')
 
-        const domItems = dom.querySelectorAll('entry')
-
-        for (let it of domItems) {
-            items.push({
-                guid: it.querySelector('link')?.getAttribute('href'),
-                title: it.querySelector('title')?.textContent,
-                // link: it.querySelector('link')?.textContent,
-                link: it.querySelector('link')?.getAttribute('href'),
-                // date: new Date(it.querySelector('pubDate')?.textContent),
-                date: new Date(it.querySelector('published')?.textContent),
-                description: it.querySelector('description')?.textContent,
-                thumbnail: (it.getElementsByTagName('media:group')[0].getElementsByTagName('media:thumbnail')[0]).getAttribute('url'),
-            })
-        }
-    } else {
+            for (let it of domItems) {
+                items.push({
+                    guid: it.querySelector('link')?.getAttribute('href'),
+                    title: it.querySelector('title')?.textContent,
+                    // link: it.querySelector('link')?.textContent,
+                    link: it.querySelector('link')?.getAttribute('href'),
+                    // date: new Date(it.querySelector('pubDate')?.textContent),
+                    date: new Date(it.querySelector('published')?.textContent),
+                    description: it.querySelector('description')?.textContent,
+                    thumbnail: (it.getElementsByTagName('media:group')[0].getElementsByTagName('media:thumbnail')[0]).getAttribute('url'),
+                })
+            }
+        } break
+        case 'atomv2': {
         const channel = dom.querySelector('channel')
         if (channel) {
             header.title = channel.querySelector('title')?.textContent
@@ -119,6 +123,27 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
                 description: it.querySelector('description')?.textContent,
                 thumbnail: (it.getElementsByTagName('media:thumbnail')[0] || it.querySelector('enclosure'))?.getAttribute('url'),
             })
+        }
+        } break
+        case 'atomv1': {
+        const domItems = dom.querySelectorAll(' entry')
+
+        header.title = dom.querySelector('title')?.textContent
+        header.url = dom.querySelector('link')?.getAttribute('href')
+
+        for (let it of domItems) {
+            items.push({
+                guid: it.querySelector('id')?.textContent,
+                title: it.querySelector('title')?.textContent,
+                link: it.querySelector('link')?.getAttribute('href'),
+                date: new Date(it.querySelector('published')?.textContent),
+                description: '',
+            })
+        }
+
+        }break
+        default: {
+            console.error('couldn\'t parse feed type.')
         }
     }
 

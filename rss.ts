@@ -41,6 +41,7 @@ export type RssHeader = {
     description: string,
     url: string,
     image: string,
+    name:string,
 }
 
 export type RssData = {
@@ -75,6 +76,7 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
         description: '',
         url: '',
         image: '',
+        name: ''
     }
 
     const items: RssArticle[] = []
@@ -222,6 +224,7 @@ export const updateFeed = async (feed: Feed, corsProxy: string) => {
     const text = await res.text()
 
     const data = parseRss(text)
+    data[0].name = feed.name
     data[1].forEach(ar => {
         ar.channelName = feed.name
     })
@@ -229,7 +232,7 @@ export const updateFeed = async (feed: Feed, corsProxy: string) => {
     return data
 }
 
-export const updateFeeds = async (channels: Channel[], corsProxy: string, progressCallback: (completed: number, total: number) => any): Promise<RssData> => {
+export const updateFeeds = async (channels: Channel[], corsProxy: string, progressCallback: (completed: number, total: number) => any): Promise<[RssData, Map<string, RssArticle[]>]> => {
     const data: RssData = {
         headerMap: new Map<string, RssHeader>(),
         articleMap: new Map<string, RssArticle[]>(),
@@ -271,7 +274,8 @@ export const updateFeeds = async (channels: Channel[], corsProxy: string, progre
     console.log('done!')
     console.log(data)
 
+    const flat = data.articleMap
     data.articleMap = shapeFeeds(data.articleMap, channels)
 
-    return data
+    return [data, flat]
 }

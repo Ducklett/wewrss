@@ -1,5 +1,5 @@
 import { A, Article, Button, Details, Div, H2, Img, Main, P, Small, Summary } from "./domfluid"
-import { Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, RssHeader, saveChannels, shapeFeeds, updateFeeds } from "./rss"
+import { AggregateFeed, Channel, clearData, FeedType, loadChannels, loadFeeds, MakeAggregateFeed, MakeFeed, RssArticle, RssData, RssHeader, saveChannels, shapeFeeds, updateFeeds } from "./rss"
 
 const setChildren = (parent: HTMLElement, children: HTMLElement[]) => {
     parent.innerHTML = null
@@ -49,23 +49,25 @@ type FeedTypeGuis = {
     [FeedType.Article]: FeedTypeGui,
 }
 
-const inlineChannelRenderer = (head: RssHeader, ...children: HTMLElement[]) => Div({ class: 'channel-info-inline' },
+let loadIndividualChannel: (name: string) => () => any = null
+
+const inlineChannelRenderer = (head: RssHeader, onClick: () => any, ...children: HTMLElement[]) => Div({ class: 'channel-info-inline' },
     head.image && Img({ src: head.image }),
     head.url ?
-        A({ href: head.url }, Small({ text: head.title }))
+        A({ href: '#', onClick }, Small({ text: head.title }))
         : Small({ text: head.title }),
     ...children)
 
-const dateAndChannelInfo = (head: RssHeader, date: Date) =>
+const dateAndChannelInfo = (head: RssHeader, date: Date, onChannelNameClick: () => any) =>
     head ?
-        inlineChannelRenderer(head, DateTime(date))
+        inlineChannelRenderer(head, onChannelNameClick, DateTime(date))
         : DateTime(date)
 
 const feedGuis: FeedTypeGuis = {
     [FeedType.MicroBlog]: {
         id: 'microblog',
         render: (a: ArticleGuiData) => Article({},
-            dateAndChannelInfo(a.channelHeader, a.date),
+            dateAndChannelInfo(a.channelHeader, a.date, loadIndividualChannel(a.channelHeader.name)),
             linkifyMedia(Main({ innerHTML: a.description })))
     },
     [FeedType.Video]: {
@@ -75,7 +77,7 @@ const feedGuis: FeedTypeGuis = {
             A({ href: a.link, target: '_blank' },
                 Img({ src: a.thumbnail }),
                 H2({ text: a.title })),
-            dateAndChannelInfo(a.channelHeader, a.date),
+            dateAndChannelInfo(a.channelHeader, a.date, loadIndividualChannel(a.channelHeader.name)),
             Details({},
                 Summary({ text: 'Description' }),
                 Main({ text: a.description })))
@@ -85,7 +87,7 @@ const feedGuis: FeedTypeGuis = {
         render: (a: ArticleGuiData) => Article({},
             A({ href: a.link, target: '_blank' },
                 H2({ text: a.title })),
-            dateAndChannelInfo(a.channelHeader, a.date),
+            dateAndChannelInfo(a.channelHeader, a.date, loadIndividualChannel(a.channelHeader.name)),
             Main({ innerHTML: a.description }))
     },
 }
@@ -125,6 +127,7 @@ export default async ({
     const main = layout.querySelector('main')
     const desktopWidth = 1200
 
+
     const defaultConfig = makeConfig('https://cors.vec-t.com/', [
         MakeAggregateFeed('twitter', FeedType.MicroBlog, [
             MakeFeed('POTUS', 'https://nitter.net/potus/rss'),
@@ -138,15 +141,21 @@ export default async ({
         return defaultConfig.corsProxy
     })()
 
+    // flattened list of channel->articles
+    // used when clicking on channel name in aggregate list to show only posts from this user
+    let flatArticleMap: Map<string, RssArticle[]>
+
     let data: RssData | null
     let lastChannel: Channel | null
     let currentPage = 0
 
-    const showFeed = (channel: Channel, page = 0) => {
+
+    const showFeed = (channel: Channel, page = 0, isFlat = false) => {
         if (window.innerWidth < desktopWidth) layout.classList.add('menu-hidden')
 
         lastChannel = channel
-        let articles: ArticleGuiData[] = data.articleMap.get(channel.name).map(({ guid, title, link, date, description, thumbnail, channelName }) =>
+        const articleMap = isFlat ? flatArticleMap : data.articleMap
+        let articles: ArticleGuiData[] = articleMap.get(channel.name).map(({ guid, title, link, date, description, thumbnail, channelName }) =>
             ({ guid, title, link, date, description, thumbnail, channelHeader: channel.kind == 'aggregate' && data.headerMap.get(channelName) }))
 
 
@@ -159,9 +168,6 @@ export default async ({
         const len = articles.length
         articles = articles.slice(displayFrom, displayTo)
 
-        console.log('page', page)
-        console.log('len', len)
-        console.log('to', displayTo)
         setVisibility(prevBtn, page > 0)
         setVisibility(nextBtn, len > displayTo)
 
@@ -219,12 +225,14 @@ export default async ({
         }
         const oldData = await loadFeeds()
         if (oldData.articleMap.size > 0 && !forceUpdate) {
+            flatArticleMap = oldData.articleMap
             oldData.articleMap = shapeFeeds(oldData.articleMap, channels)
             data = oldData
         } else {
-            data = await updateFeeds(channels, corsProxy, countUpdated)
+            [data, flatArticleMap] = await updateFeeds(channels, corsProxy, countUpdated)
         }
         console.log(data)
+        console.log('flatboys', flatArticleMap)
 
             ; (window as any).data = data
 
@@ -238,6 +246,13 @@ export default async ({
         } else {
             layout.classList.add('menu-hidden')
         }
+    }
+
+    loadIndividualChannel = name => () => {
+        const last = (lastChannel as AggregateFeed)
+        const thisChannel = last.feeds.filter(f => f.name == name)[0]
+        if (thisChannel.type == null) thisChannel.type = last.type
+        showFeed(thisChannel, 0, true)
     }
 
 

@@ -194,6 +194,7 @@ export default async ({
 
         setChildren(articleContainer, articleNodes)
         main.scrollTop = 0
+        document.querySelector('html').scrollTop=0
     }
 
     const populateChannelList = (channels: Channel[]) =>

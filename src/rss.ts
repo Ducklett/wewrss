@@ -41,7 +41,7 @@ export type RssHeader = {
     description: string,
     url: string,
     image: string,
-    name:string,
+    name: string,
 }
 
 export type RssData = {
@@ -105,52 +105,52 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
             }
         } break
         case 'atomv2': {
-        const channel = dom.querySelector('channel')
-        if (channel) {
+            const channel = dom.querySelector('channel')
+            if (channel) {
 
-            let linkElem:HTMLElement = channel.querySelector('link')
-            // why does this match...
-            if (linkElem.tagName == "atom:link") {
-                linkElem = channel.querySelectorAll('link')[1]
+                let linkElem: HTMLElement = channel.querySelector('link')
+                // why does this match...
+                if (linkElem.tagName == "atom:link") {
+                    linkElem = channel.querySelectorAll('link')[1]
+                }
+
+                header.title = channel.querySelector('title')?.textContent
+                header.url = linkElem?.textContent
+                header.description = channel.querySelector('description')?.textContent
+                header.image = channel.querySelector('image>url')?.textContent
+
             }
 
-            header.title = channel.querySelector('title')?.textContent
-            header.url = linkElem?.textContent
-            header.description = channel.querySelector('description')?.textContent
-            header.image = channel.querySelector('image>url')?.textContent
+            const domItems = dom.querySelectorAll('channel item')
 
-        }
-
-        const domItems = dom.querySelectorAll('channel item')
-
-        for (let it of domItems) {
-            items.push({
-                guid: it.querySelector('guid')?.textContent,
-                title: it.querySelector('title')?.textContent,
-                link: it.querySelector('link')?.textContent,
-                date: new Date(it.querySelector('pubDate')?.textContent),
-                description: it.querySelector('description')?.textContent,
-                thumbnail: (it.getElementsByTagName('media:thumbnail')[0] || it.querySelector('enclosure'))?.getAttribute('url'),
-            })
-        }
+            for (let it of domItems) {
+                items.push({
+                    guid: it.querySelector('guid')?.textContent,
+                    title: it.querySelector('title')?.textContent,
+                    link: it.querySelector('link')?.textContent,
+                    date: new Date(it.querySelector('pubDate')?.textContent),
+                    description: it.querySelector('description')?.textContent,
+                    thumbnail: (it.getElementsByTagName('media:thumbnail')[0] || it.querySelector('enclosure'))?.getAttribute('url'),
+                })
+            }
         } break
         case 'atomv1': {
-        const domItems = dom.querySelectorAll(' entry')
+            const domItems = dom.querySelectorAll(' entry')
 
-        header.title = dom.querySelector('title')?.textContent
-        header.url = dom.querySelector('link')?.getAttribute('href')
+            header.title = dom.querySelector('title')?.textContent
+            header.url = dom.querySelector('link')?.getAttribute('href')
 
-        for (let it of domItems) {
-            items.push({
-                guid: it.querySelector('id')?.textContent,
-                title: it.querySelector('title')?.textContent,
-                link: it.querySelector('link')?.getAttribute('href'),
-                date: new Date(it.querySelector('published')?.textContent),
-                description: '',
-            })
-        }
+            for (let it of domItems) {
+                items.push({
+                    guid: it.querySelector('id')?.textContent,
+                    title: it.querySelector('title')?.textContent,
+                    link: it.querySelector('link')?.getAttribute('href'),
+                    date: new Date(it.querySelector('published')?.textContent),
+                    description: '',
+                })
+            }
 
-        }break
+        } break
         default: {
             console.error('couldn\'t parse feed type.')
         }
@@ -243,28 +243,35 @@ export const updateFeeds = async (channels: Channel[], corsProxy: string, progre
 
     progressCallback(0, channelCount)
     const incrementCompletion = () => progressCallback(++completed, channelCount)
-    for (let ch of channels) {
 
+    const updates = []
+
+    for (let ch of channels) {
         switch (ch.kind) {
             case 'aggregate': {
                 for (let fd of ch.feeds) {
-                    const [header, feedArticles] = await updateFeed(fd, corsProxy)
-                    incrementCompletion()
-                    data.headerMap.set(fd.name, header)
-                    data.articleMap.set(fd.name, feedArticles)
+                    const update = updateFeed(fd, corsProxy).then(([header, feedArticles]) => {
+                        incrementCompletion()
+                        data.headerMap.set(fd.name, header)
+                        data.articleMap.set(fd.name, feedArticles)
+                    })
+                    updates.push(update)
                 }
-
                 break
             }
             case 'single': {
-                const [header, articles] = await updateFeed(ch, corsProxy)
-                incrementCompletion()
-                data.articleMap.set(ch.name, articles)
-                data.headerMap.set(ch.name, header)
+                const update = await updateFeed(ch, corsProxy).then(([header, articles]) => {
+                    incrementCompletion()
+                    data.articleMap.set(ch.name, articles)
+                    data.headerMap.set(ch.name, header)
+                })
+                updates.push(update)
                 break
             }
         }
     }
+
+    await Promise.all(updates)
 
     localStorage.setItem('feedInfo', JSON.stringify({
         headerMap: Object.fromEntries(data.headerMap),

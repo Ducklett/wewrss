@@ -219,6 +219,10 @@ div#update-area {
     width: 100%;
 }
 
+.rss-feed-view {
+    padding: 24px;
+}
+
 .channel-button {
     border: none;
     margin: none;
@@ -266,7 +270,6 @@ article h2 {
 #videos {
     display: grid;
     align-items: center;
-    padding: 24px;
     gap: 10px;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     grid-auto-columns: 200px;
@@ -281,7 +284,6 @@ article h2 {
 }
 
 #microblog {
-    padding: 24px;
     width: 100%;
     display: grid;
     grid-template-columns: fit-content(600px);

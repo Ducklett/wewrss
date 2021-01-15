@@ -2,6 +2,7 @@ export enum FeedType {
     Article = 'article',
     MicroBlog = 'microblog',
     Video = 'video',
+    gallery = 'gallery',
 }
 
 export type Feed = {
@@ -135,7 +136,7 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
             }
         } break
         case 'atomv1': {
-            const domItems = dom.querySelectorAll(' entry')
+            const domItems = dom.querySelectorAll('entry')
 
             header.title = dom.querySelector('title')?.textContent
             header.url = dom.querySelector('link')?.getAttribute('href')
@@ -145,8 +146,8 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
                     guid: it.querySelector('id')?.textContent,
                     title: it.querySelector('title')?.textContent,
                     link: it.querySelector('link')?.getAttribute('href'),
-                    date: new Date(it.querySelector('published')?.textContent),
-                    description: '',
+                    date: new Date(it.querySelector('published')?.textContent || it.querySelector('updated')?.textContent),
+                    description: it.querySelector('content')?.innerHTML,
                 })
             }
 

@@ -47,6 +47,7 @@ type FeedTypeGuis = {
     [FeedType.MicroBlog]: FeedTypeGui,
     [FeedType.Video]: FeedTypeGui,
     [FeedType.Article]: FeedTypeGui,
+    [FeedType.gallery]: FeedTypeGui,
 }
 
 let loadIndividualChannel: (name: string) => () => any = null
@@ -68,7 +69,9 @@ const feedGuis: FeedTypeGuis = {
         id: 'microblog',
         render: (a: ArticleGuiData) => Article({},
             dateAndChannelInfo(a.channelHeader, a.date, loadIndividualChannel(a.channelHeader.name)),
-            linkifyMedia(Main({ innerHTML: a.description })))
+            linkifyMedia(Main({
+                innerHTML: (a.description || A({ href: a.link }, P({ text: a.title })))
+            })))
     },
     [FeedType.Video]: {
         id: 'videos',
@@ -89,6 +92,11 @@ const feedGuis: FeedTypeGuis = {
                 H2({ text: a.title })),
             dateAndChannelInfo(a.channelHeader, a.date, loadIndividualChannel(a.channelHeader.name)),
             Main({ innerHTML: a.description }))
+    },
+    [FeedType.gallery]: {
+        id: 'gallery',
+        render: (a: ArticleGuiData) => A({ href: a.link, target: '_blank' },
+            Div({ innerHTML: a.description }).querySelector('img'))
     },
 }
 
@@ -162,7 +170,7 @@ export default async ({
         const displayType = channel.type || FeedType.Article
 
         currentPage = page
-        const itemsPerPage = 30
+        const itemsPerPage = 28 
         const displayFrom = itemsPerPage * page
         const displayTo = itemsPerPage * (page + 1)
         const len = articles.length
@@ -190,11 +198,11 @@ export default async ({
         const gui = feedGuis[displayType]
 
         articleContainer.id = gui.id
-        const articleNodes = articles.map(gui.render)
+        const articleNodes: HTMLElement[] = articles.map(gui.render)
 
         setChildren(articleContainer, articleNodes)
         main.scrollTop = 0
-        document.querySelector('html').scrollTop=0
+        document.querySelector('html').scrollTop = 0
     }
 
     const populateChannelList = (channels: Channel[]) =>

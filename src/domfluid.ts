@@ -2,7 +2,7 @@ export interface DomFluidNodeOptions {
     id?: string,
     class?: string,
     text?: string,
-    innerHTML?:string,
+    innerHTML?: string | HTMLElement,
     src?: string,
     href?: string,
     target?: '_blank' | '_parent' | '_self' | '_top',

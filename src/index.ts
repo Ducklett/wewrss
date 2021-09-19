@@ -11,16 +11,16 @@ import makeGui from './gui'
 // ]
 
 makeGui({
-    layout: document.querySelector('#layout'),
-    sidebar: document.getElementById('channel-list'),
-    channelInfoContainer: document.getElementById('channel-info'),
-    articleContainer: document.getElementById('articles'),
-    menuBtn: document.querySelector('.menu-btn'),
-    nextBtn: document.getElementById('btn-next') as HTMLButtonElement,
-    prevBtn: document.getElementById('btn-previous') as HTMLButtonElement,
-    updateBtn: document.querySelector('#update-channels'),
-    importBtn: document.querySelector('#btn-import'),
-    exportBtn: document.querySelector('#btn-export'),
-    updateProgress: document.querySelector('.progress'),
-    lastUpdated: document.querySelector('.last-updated'),
+  layout: document.querySelector('#layout'),
+  sidebar: document.getElementById('channel-list'),
+  channelInfoContainer: document.getElementById('channel-info'),
+  articleContainer: document.getElementById('articles'),
+  menuBtn: document.querySelector('.menu-btn'),
+  nextBtn: document.getElementById('btn-next') as HTMLButtonElement,
+  prevBtn: document.getElementById('btn-previous') as HTMLButtonElement,
+  updateBtn: document.querySelector('#update-channels'),
+  importBtn: document.querySelector('#btn-import'),
+  exportBtn: document.querySelector('#btn-export'),
+  updateProgress: document.querySelector('.progress'),
+  lastUpdated: document.querySelector('.last-updated')
 })

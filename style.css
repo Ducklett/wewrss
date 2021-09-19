@@ -119,6 +119,10 @@ small {
     color: var(--fg-light);
 }
 
+pre {
+    overflow: auto;
+}
+
 div#update-area {
     display: flex;
     flex-direction: row;
@@ -187,6 +191,17 @@ div#update-area {
         margin: 10px;
         position: fixed;
     }
+
+#articles {
+    display: grid;
+    justify-content: center;
+    grid-template-columns: minmax(1fr, 800px);
+}
+
+    #articles article {
+        max-width: 600px;
+    }
+
 }
 
 @media only screen and (max-width: 1199px) {
@@ -222,6 +237,7 @@ div#update-area {
 .rss-feed-view {
     padding: 24px;
     padding-bottom: 0px;
+    word-break: break-word;
 }
 
 .channel-button {
@@ -242,9 +258,6 @@ div#update-area {
 
 #articles {
     width: 100%;
-    display: grid;
-    justify-content: center;
-    grid-template-columns: minmax(1fr, 800px);
 }
 
 #articles h2 {
@@ -256,11 +269,6 @@ div#update-area {
 #articles p {
     max-width: 80ch;
     line-height: 1.4;
-}
-
-#articles article {
-    display: inline-block;
-    max-width: 600px;
 }
 
 article h2 {

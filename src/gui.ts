@@ -59,6 +59,7 @@ const DateTime = (d: Date) => Small({ text: d.toDateString() })
 type ArticleGuiData = {
   guid: string
   title: string
+  contentAuthor?: string
   link: string
   date: Date
   description: string
@@ -118,6 +119,7 @@ const feedGuis: FeedTypeGuis = {
           a.date,
           loadIndividualChannel(a.channelHeader.name)
         ),
+        a.contentAuthor && P({ text: `🔁 ${a.contentAuthor}` }),
         linkifyMedia(
           Main({
             innerHTML:
@@ -241,9 +243,19 @@ export default async ({
     let articles: ArticleGuiData[] = articleMap
       .get(channel.name)
       .map(
-        ({ guid, title, link, date, description, thumbnail, channelName }) => ({
+        ({
           guid,
           title,
+          contentAuthor,
+          link,
+          date,
+          description,
+          thumbnail,
+          channelName
+        }) => ({
+          guid,
+          title,
+          contentAuthor,
           link,
           date,
           description,

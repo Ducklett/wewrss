@@ -28,6 +28,7 @@ export type SerializedRssData = {
 export type RssArticle = {
   guid: string
   title: string
+  contentAuthor?: string
   link: string
   date: Date
   description: string
@@ -139,7 +140,11 @@ export const parseRss = (feed: string): [RssHeader, RssArticle[]] => {
         const domItems = dom.querySelectorAll('channel item')
 
         for (let it of domItems) {
+          const creator =
+            it.getElementsByTagName('dc:creator')[0]?.textContent ?? null
+
           items.push({
+            contentAuthor: header.title.includes(creator) ? null : creator,
             guid: it.querySelector('guid')?.textContent,
             title: it.querySelector('title')?.textContent,
             link: it.querySelector('link')?.textContent,
